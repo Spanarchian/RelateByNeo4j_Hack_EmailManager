@@ -1,0 +1,145 @@
+[project]
+name = "gmail-onboarding-assistant"
+version = "0.1.0"
+description = "API-first onboarding email assistant: Gmail + Mailchimp Transactional delivery, Relate by Neo4j graph storage, mandatory human approval."
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.162",
+    "google-auth-oauthlib>=1.5",
+    "google-auth[requests]>=2.62",
+    "httpx>=0.28",
+    "jinja2>=3.1.6",
+    "pydantic-settings>=2.16",
+    "pydantic[email]>=2.14",
+    "relate-db==1.0.1",
+    "uvicorn[standard]>=0.54",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/email_service"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4",
+    "pytest>=9.2",
+    "pytest-asyncio>=1.5",
+    "pytest-cov>=7.1",
+    "respx>=0.23",
+    "ruff>=0.17",
+    "taskipy>=1.14",
+    "types-requests>=2.33.0.20261030",
+]
+docs = [
+    "myst-parser>=5.2",
+    "sphinx>=9.2",
+    "sphinx-rtd-theme>=3.1",
+]
+
+[project.scripts]
+gmail-onboarding-auth = "email_service.providers.gmail_auth:main"
+
+# --- Taskipy ---------------------------------------------------------------------
+[tool.taskipy.settings]
+use_vars = true
+
+[tool.taskipy.variables]
+app = "email_service.main:create_app"
+
+[tool.taskipy.tasks]
+dev = { cmd = "uvicorn --factory {app} --reload --port 8000", help = "Run the API with auto-reload" }
+run = { cmd = "uvicorn --factory {app} --host 0.0.0.0 --port 8000 --proxy-headers", help = "Run the API (production mode)" }
+auth = { cmd = "python -m email_service.providers.gmail_auth", help = "One-off Gmail OAuth authorisation" }
+api-key = { cmd = "python scripts/generate_api_key.py", help = "Generate an API key and its SHA-256" }
+test-unit = { cmd = "pytest -m unit", help = "Unit tests" }
+test-integration = { cmd = "pytest -m integration", help = "Integration tests" }
+test-e2e = { cmd = "pytest -m e2e", help = "End-to-end tests" }
+test-all = { cmd = "pytest --cov=email_service --cov-report=term-missing --cov-report=xml", help = "All tests with coverage gate" }
+test-graph = { cmd = "pytest -m graph", help = "Relate graph tests" }
+test-providers = { cmd = "pytest -m providers", help = "Gmail / Mailchimp provider and failover tests" }
+test-workflow = { cmd = "pytest -m workflow", help = "Onboarding, review and approval workflow tests" }
+lint = { cmd = "ruff check .", help = "Lint" }
+format = { cmd = "ruff format .", help = "Format" }
+typecheck = { cmd = "mypy src", help = "Static type checks" }
+quality = { cmd = "ruff check . && ruff format --check . && mypy src && task test-all", help = "Everything CI runs" }
+graph-seed = { cmd = "python scripts/seed_graph.py", help = "Seed reference + sample data (app must be stopped)" }
+graph-check = { cmd = "python scripts/check_graph.py", help = "Read-only graph inspection" }
+docs = { cmd = "sphinx-build -W --keep-going -b html docs docs/_build/html", help = "Build Sphinx docs" }
+docker-build = { cmd = "docker compose build", help = "Build the Docker image" }
+deploy = { cmd = "docker compose up -d --build --wait", help = "Build and start the stack" }
+logs = { cmd = "docker compose logs -f app", help = "Follow application logs" }
+stop = { cmd = "docker compose down", help = "Stop the stack (data volumes are kept)" }
+docker-token = { cmd = "docker compose run --rm --no-deps -T app sh -c 'umask 077 && cat > /secrets/gmail/token.json' < secrets/token.json", help = "Copy secrets/token.json into the gmail-token volume" }
+
+# --- Ruff ------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["docs/_build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "N", "C4", "PIE", "RET"]
+ignore = ["S101", "RUF012", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: compound asserts are fine, en dashes are required subject text.
+"tests/**" = ["S105", "S106", "S108", "N802", "PT018", "RUF001", "RUF059", "ASYNC240"]
+"scripts/**" = ["T201"]
+"src/email_service/onboarding/templates.py" = ["RUF001"]  # en dashes are required by the subject lines
+
+[tool.ruff.format]
+quote-style = "double"
+
+# --- mypy ------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["google.*", "google_auth_oauthlib.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# google-auth ships partial annotations only
+module = ["email_service.providers.gmail", "email_service.providers.gmail_auth"]
+disallow_untyped_calls = false
+
+# --- pytest ----------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: fast, isolated tests",
+    "integration: components wired together (real Relate store, mocked HTTP)",
+    "e2e: complete workflows through the HTTP API",
+    "external: real Gmail / Mailchimp calls (opt-in: RUN_EXTERNAL_TESTS=1)",
+    "graph: Relate graph persistence and queries",
+    "providers: email providers and failover",
+    "workflow: onboarding, review and approval workflow",
+]
+filterwarnings = [
+    "error::pytest.PytestUnraisableExceptionWarning",
+    # FastAPI's TestClient still wraps httpx; harmless in tests.
+    "ignore:Using `httpx` with `starlette.testclient`",
+]
+
+[tool.coverage.run]
+source = ["email_service"]
+branch = true
+omit = ["*/providers/gmail_auth.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise AssertionError", "pragma: no cover"]

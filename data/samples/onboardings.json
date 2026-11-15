@@ -1,0 +1,49 @@
+{
+  "_comment": "Fictional sample data only. Names, organisations and addresses are invented; example.org/example.com are reserved domains (RFC 2606).",
+  "onboardings": [
+    {
+      "type": "volunteer",
+      "name": "Alex Morgan",
+      "email": "alex.morgan@example.org",
+      "organisation": "Riverside Community Food Bank",
+      "volunteer_role": "Warehouse Volunteer",
+      "coordinator": "Priya Shah",
+      "team": "Saturday Warehouse",
+      "start_date": "2027-02-06",
+      "induction_details": "Saturday 30 January 2027, 10:00-12:30 at the Riverside warehouse, Unit 4, Mill Lane. Ask for Priya at the main gate."
+    },
+    {
+      "type": "volunteer",
+      "name": "Bea Okafor",
+      "email": "bea.okafor@example.org",
+      "organisation": "Riverside Community Food Bank",
+      "volunteer_role": "Delivery Driver",
+      "coordinator": "Priya Shah",
+      "team": "Home Deliveries",
+      "start_date": "2027-02-10",
+      "induction_details": "Wednesday 3 February 2027, 18:00-19:30, online via the link your coordinator will send separately."
+    },
+    {
+      "type": "employee",
+      "name": "Jordan Lee",
+      "email": "jordan.lee@example.com",
+      "organisation": "Northwind Analytics Ltd",
+      "job_title": "Data Analyst",
+      "department": "Insights",
+      "manager": "Sam Carter",
+      "start_date": "2027-02-01",
+      "first_day_arrangements": "Please arrive at 09:30 at reception on the 4th floor, 12 Harbour Street. Bring photo ID for your building pass. Your laptop will be ready at your desk."
+    },
+    {
+      "type": "employee",
+      "name": "Maya Fernandes",
+      "email": "maya.fernandes@example.com",
+      "organisation": "Northwind Analytics Ltd",
+      "job_title": "Software Engineer",
+      "department": "Platform",
+      "manager": "Chris Novak",
+      "start_date": "2027-02-15",
+      "first_day_arrangements": "Your first day is remote. Join the welcome call at 10:00 using the calendar invitation from Chris; your equipment will be delivered the Friday before."
+    }
+  ]
+}

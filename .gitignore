@@ -1,0 +1,36 @@
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+secrets/
+credentials.json
+token.json
+**/credentials*.json
+**/token*.json
+
+# Local graph data (Relate stores)
+data/graph/
+*.rl
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Docs and packaging
+docs/_build/
+gmail-onboarding-assistant.zip
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

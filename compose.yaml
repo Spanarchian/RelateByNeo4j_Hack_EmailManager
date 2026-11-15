@@ -1,0 +1,54 @@
+# Gmail Onboarding Assistant
+#   uv run task deploy   # build + start + wait for healthy
+#   uv run task logs
+#   uv run task stop     # volumes (graph data, Gmail token) are kept
+#
+# IMPORTANT: run exactly ONE app container per relate-data volume.
+# Relate is an embedded database with a single writer per store; a second
+# container on the same volume would fail with "storage locked".
+name: gmail-onboarding-assistant
+
+services:
+  app:
+    build:
+      context: .
+    image: gmail-onboarding-assistant:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      RELATE_STORE_PATH: /data/graph/onboarding
+      GMAIL_TOKEN_FILE: /secrets/gmail/token.json
+      GMAIL_CREDENTIALS_FILE: /secrets/gmail/credentials.json
+    ports:
+      # Loopback only: terminate TLS in a reverse proxy in front (see docs/security.rst).
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8000}:8000"
+    volumes:
+      - relate-data:/data/graph
+      - gmail-token:/secrets/gmail
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 512m
+    stop_grace_period: 20s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  relate-data:
+  gmail-token:

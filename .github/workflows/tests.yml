@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UV_PYTHON: "3.14"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.19"
+          enable-cache: true
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Ruff (lint)
+        run: uv run ruff check .
+
+      - name: Ruff (format)
+        run: uv run ruff format --check .
+
+      - name: mypy
+        run: uv run mypy src
+
+      - name: Unit tests
+        run: uv run pytest -m unit --cov=email_service --cov-report=
+
+      - name: Integration tests
+        run: uv run pytest -m integration --cov=email_service --cov-append --cov-report=
+
+      - name: E2E tests
+        run: uv run pytest -m e2e --cov=email_service --cov-append --cov-report=
+
+      - name: Coverage gate (85%)
+        run: uv run coverage report --fail-under=85
+
+      - name: Build documentation
+        run: uv run task docs
+
+      - name: Validate compose file
+        run: docker compose config -q
