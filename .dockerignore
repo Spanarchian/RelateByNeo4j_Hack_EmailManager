@@ -1,0 +1,26 @@
+# Keep the build context small and free of secrets.
+.git
+.github
+.venv
+.env
+.env.*
+!.env.example
+secrets/
+credentials.json
+token.json
+**/credentials*.json
+**/token*.json
+data/graph/
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage.xml
+htmlcov
+docs/_build
+tests/
+dist/
+build/
+*.zip
